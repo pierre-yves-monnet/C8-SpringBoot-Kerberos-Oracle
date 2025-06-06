@@ -48,14 +48,14 @@ spec:
             - containerPort: 1521
             - containerPort: 5500
           env:
-            - name: ORACLE_PWD
-              value: MySecurePassword123
+#            - name: ORACLE_PWD
+#              value: MySecurePassword123
             - name: ORACLE_PASSWORD
               value: MySecurePassword123
-            - name: APP_USER
-              value: app
-            - name: APP_USER_PASSWORD
-              value: MySecurePassword123
+#            - name: APP_USER
+#              value: app
+#            - name: APP_USER_PASSWORD
+#              value: MySecurePassword123
           volumeMounts:
             - mountPath: /opt/oracle/oradata
               name: oracle-pv

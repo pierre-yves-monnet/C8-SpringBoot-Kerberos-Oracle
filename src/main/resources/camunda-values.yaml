@@ -52,32 +52,55 @@ identity:
       command:
         - sh
         - -c
-        - curl -o /extraDrivers/ojdbc.jar "https://artifacts-read.gkp.jpmchase.net/artifactory/maven/com/oracle/database/jdbc/ojdbc17/23.8.0.25.04/ojdbc17-23.8.0.25.04.jar"
+        - curl -L -o /extraDrivers/ojdbc17.jar https://raw.githubusercontent.com/pierre-yves-monnet/C8-SpringBoot-Kerberos-Oracle/refs/heads/main/driver/ojdbc17.jar
+
       volumeMounts:
         - name: jdbcdrivers
           mountPath: /extraDrivers
       securityContext:
           runAsUser: 1000
           runAsNonRoot: true
+  command:
+    - /bin/sh
+    - -c
+    - java -cp "/extraDrivers/ojdbc17.jar:/app/identity.jar" org.springframework.boot.loader.launch.JarLauncher
   env:
     - name: SPRING_PROFILES_ACTIVE
       value: oidc
     - name: SPRING_DATASOURCE_URL
-      value: jdbc:oracle:thin:@(DESCRIPTION = (CONNECT_TIMEOUT=120 sec) (RETRY_COUNT=20)(RETRY_DELAY=3) (TRANSPORT_CONNECT_TIMEOUT=3 sec) (ADDRESS_LIST = (LOAD_BALANCE=on) (ADDRESS = (PROTOCOL = TCP)(HOST = wh-1342ca0a41.svr.us.jpmchase.net)(PORT = 6136))) (CONNECT_DATA= (SERVICE_NAME = NPADEV_DP087951_230724123050_F_READWRITE)))
+      value: jdbc:oracle:thin:@//oracle-db:1521/XE
     - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
       value: oracle.jdbc.OracleDriver
-    - name: SPRING_JPA_DATABASE
-      value: oracle
-    - name: KRB5_CONFIG
-      value: /etc/krb5.conf
-    - name: FUNCTIONAL_ACCOUNT
-      value: npa_data_aud
-    - name: DB_KRB5CCNAME
-      value: /kcc/npa_data_aud_krb5cache
-    - name: BSID_USE_APP_IDENTITY_LABEL
+#    - name: SPRING_JPA_DATABASE-PLATFORM
+#      value: org.hibernate.dialect.Oracle12cDialect
+    - name: SPRING_JPA_SHOW-SQL
       value: "true"
-    - name: JAVA_OPTS
-      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
+    - name: SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL
+      value: "true"
+    - name: LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER
+      value: TRACE
+
+    #    - name: SPRING_JPA_DATABASE
+#      value: oracle
+    - name: SPRING_DATASOURCE_USERNAME
+      value: oraidentity
+    - name: SPRING_DATASOURCE_PASSWORD
+      value: MySecurePassword123
+    - name: SPRING_JPA_HIBERNATE_DDL-AUTO
+      value: update
+
+
+    #    - name: KRB5_CONFIG
+#      value: /etc/krb5.conf
+#    - name: FUNCTIONAL_ACCOUNT
+#      value: npa_data_aud
+#    - name: DB_KRB5CCNAME
+#      value: /kcc/npa_data_aud_krb5cache
+#    - name: BSID_USE_APP_IDENTITY_LABEL
+#      value: "true"
+#    - name: JAVA_OPTS
+#      value: "-Dloader.path=/extraDrivers"
+#      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
   extraVolumeMounts:
     - name: jdbcdrivers
       mountPath: /extraDrivers
@@ -105,11 +128,11 @@ webModeler:
       fromAddress: "pierre-yves.monnet@camunda.com"
 
 operate:
-  enabled: true
+  enabled: false
 
 
 tasklist:
-  enabled: true
+  enabled: false
 
 optimize:
   enabled: false
