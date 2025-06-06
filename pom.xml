@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 1.0.0 First version -->
+    <!-- 1.1.0 Add connection dashboard and review dashboard when no connection is possible to component. GCS is integrated -->
+    <!-- 1.2.0 Add Current Backup message + refresh every 10 seconds + Explore backups All components (Operate, TaskList,Optimize, ZeebeRecord, Zeebe) to create an exhaustive list -->
+    <!-- 1.3.0 Use the operate/actuator/env if this is open -->
+    <groupId>io.camunda.community</groupId>
+    <artifactId>blueberry</artifactId>
+    <version>1.3.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+
+
+        <!-- 2.7.4 -->
+        <!-- According https://github.com/camunda-community-hub/spring-zeebe/blob/main/pom.xml -->
+        <version.spring.boot>3.3.0</version.spring.boot>
+
+    </properties>
+
+
+    <!-- Push the library to Maven -->
+    <!-- Visit https://github.com/camunda-community-hub/community-action-maven-release -->
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Import dependency management from Spring Boot -->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${version.spring.boot}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+
+
+
+
+        <!-- https://mvnrepository.com/artifact/io.camunda.connector/connector-validation -->
+
+
+
+        <!-- Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${version.spring.boot}</version>
+        </dependency>
+        <!-- JPA to save entity -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Process the configuration file -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>19.8.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+    </build>
+
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>identity</id>
+            <name>Camunda Identity</name>
+            <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
+        </repository>
+
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>connectors</id>
+            <name>Connectors Repository</name>
+            <url>https://artifacts.camunda.com/artifactory/connectors/</url>
+        </repository>
+
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>connectors-snapshots</id>
+            <name>Connectors Snapshot Repository</name>
+            <url>https://artifacts.camunda.com/artifactory/connectors-snapshots/</url>
+        </repository>
+
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>camunda-community</id>
+            <name>Camunda Community</name>
+            <url>https://artifacts.camunda.com/artifactory/camunda-bpm-community-extensions/</url>
+        </repository>
+
+
+    </repositories>
+</project>

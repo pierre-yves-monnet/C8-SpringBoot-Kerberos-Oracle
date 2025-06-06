@@ -1,0 +1,134 @@
+# Web Modeler chart
+# Chart values for the Camunda Platform 8 Helm chart.
+# This file deliberately contains only the values that differ from the defaults.
+# For changes and documentation, use your favorite diff tool to compare it with:
+# https://github.com/camunda/camunda-platform-helm/blob/main/charts/camunda-platform/values.yaml
+
+
+global:
+  identity:
+    auth:
+      enabled: true
+
+  # https://docs.camunda.io/docs/self-managed/setup/install/#configure-license-key
+  license:
+    key: >
+      --------------- BEGIN CAMUNDA LICENSE KEY ---------------
+      X6CnHxJCaOyKaL43aM3FD3wMtBzgpbjjTZ0Vpwik/we5tGeqmFjDvmWwR
+      L+iGwmFbHxwXlyzWqAMhYJBsOJHyjtV5Ntxcn4Nqw45Bjo1++t1XMZuhK
+      YDtdygvM7eoaK2BBXs3EoeBCZnKXV1Ccvyr6jcLNA01TrGVVk1UZSQUhY
+      YaejV30A4weCBgojtdy5cawieVmWE/tVsThEKRaP+hyuwPnPbj0qWn/MY
+      d4wGLkSrW85OKpg0vH+KpCu5bKkKPR/+qx2jERp1EE90M8JJD3yZ8L7nA
+      rG9Oj35/4kLss8wzHFyzdp4NBiZ/+LN9B65RyMD+YuTlyyoMu7aV2ZddQ
+      G99pNfB0yBi+QNTlg0W4k5OQ5IuBhCdyRfhfwmxCsI+L1o+q54cOpCmGz
+      EbiVio4Zo72OgzvI2X7MUZnyef2PC86MUTZKWhhKglRRq3Z25lEIcONQv
+      C5TqWlhxYabK3UUXOj5q/LpRDicIV4hN5hs8eaVVNAAWYNv+t/LSNrCPU
+      OIN8K8nOfwpoMzn6ZWSQ3Hbxle5a/LrPMLlVOox1q0e434Iy51ZZcsOem
+      XSNLZuXm3qqtb7aqOyJu8RZ4zTd6/Pc8ed8ziBSfr7GNnSVzwo3HXN1dV
+      1Udeliux57X0x++D4XLgtAKqxExJyuBy2B/ZtqILyDllRbjadVuuEG30=;
+      customer = testaccount_camunda;
+      expiryDate = unlimited;
+      licenseType = production;
+      startDate = 2024-10-11;
+      ---------------  END CAMUNDA LICENSE KEY  ---------------
+
+prometheusServiceMonitor:
+  enabled: false
+
+
+identity:
+  enabled: true
+  keycloak:
+    url:
+      protocol: "http"
+      host: "camunda-keycloak-0"
+      port: "80"
+  postgresql:
+    enabled: false
+  initContainers:
+    - name: download-jdbc-driver
+      image: curlimages/curl:latest
+      imagePullPolicy: Always
+      command:
+        - sh
+        - -c
+        - curl -o /extraDrivers/ojdbc.jar "https://artifacts-read.gkp.jpmchase.net/artifactory/maven/com/oracle/database/jdbc/ojdbc17/23.8.0.25.04/ojdbc17-23.8.0.25.04.jar"
+      volumeMounts:
+        - name: jdbcdrivers
+          mountPath: /extraDrivers
+      securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+  env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: oidc
+    - name: SPRING_DATASOURCE_URL
+      value: jdbc:oracle:thin:@(DESCRIPTION = (CONNECT_TIMEOUT=120 sec) (RETRY_COUNT=20)(RETRY_DELAY=3) (TRANSPORT_CONNECT_TIMEOUT=3 sec) (ADDRESS_LIST = (LOAD_BALANCE=on) (ADDRESS = (PROTOCOL = TCP)(HOST = wh-1342ca0a41.svr.us.jpmchase.net)(PORT = 6136))) (CONNECT_DATA= (SERVICE_NAME = NPADEV_DP087951_230724123050_F_READWRITE)))
+    - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+      value: oracle.jdbc.OracleDriver
+    - name: SPRING_JPA_DATABASE
+      value: oracle
+    - name: KRB5_CONFIG
+      value: /etc/krb5.conf
+    - name: FUNCTIONAL_ACCOUNT
+      value: npa_data_aud
+    - name: DB_KRB5CCNAME
+      value: /kcc/npa_data_aud_krb5cache
+    - name: BSID_USE_APP_IDENTITY_LABEL
+      value: "true"
+    - name: JAVA_OPTS
+      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
+  extraVolumeMounts:
+    - name: jdbcdrivers
+      mountPath: /extraDrivers
+    - name: krb5-config
+      mountPath: /etc/krb5.conf
+      subPath: krb5.conf
+  extraVolumes:
+    - name: jdbcdrivers
+      emptyDir: { }
+  # krb5-config is a configmap created during the Kerberos application
+    - name: krb5-config
+      configMap:
+        name: krb5-config
+
+identityKeycloak:
+  enabled: true
+
+keycloak:
+  enabled: true
+
+webModeler:
+  enabled: false
+  restapi:
+    mail:
+      fromAddress: "pierre-yves.monnet@camunda.com"
+
+operate:
+  enabled: true
+
+
+tasklist:
+  enabled: true
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+
+
+zeebe:
+  clusterSize: 1
+  partitionCount: 1
+  replicationFactor: 1
+
+  env:
+
+
+
+zeebe-gateway:
+  replicas: 1
+
+

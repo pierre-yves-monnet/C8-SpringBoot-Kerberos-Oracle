@@ -1,0 +1,11 @@
+spring.datasource:
+  url: jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=oracle-host)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE))(SECURITY=(KERBEROS_SERVICE_NAME=oracle)))
+  username: /
+  password:
+  driver-class-name: oracle.jdbc.OracleDriver
+
+  # JPA / Hibernate
+spring.jpa:
+  database-platform: org.hibernate.dialect.OracleDialect
+  show-sql: true
+  hibernate.ddl-auto: validate

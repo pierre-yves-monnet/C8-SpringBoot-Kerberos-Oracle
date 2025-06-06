@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: krb5-config
+data:
+  krb5.conf: |
+    [libdefaults]
+      default_realm = EXAMPLE.COM
+    [realms]
+      EXAMPLE.COM = {
+        kdc = krb5-kdc.default.svc.cluster.local
+        admin_server = krb5-kdc.default.svc.cluster.local
+      }
+    [domain_realm]
+      .example.com = EXAMPLE.COM
+      example.com = EXAMPLE.COM
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: krb5-kdc-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: krb5-kdc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: krb5-kdc
+  template:
+    metadata:
+      labels:
+        app: krb5-kdc
+    spec:
+      containers:
+        - name: krb5-kdc
+          image: gcavalcante8808/krb5-server
+          env:
+            - name: KRB5_REALM
+              value: EXAMPLE.COM
+            - name: KRB5_KDC
+              value: krb5-kdc.default.svc.cluster.local
+            - name: KRB5_PASS
+              value: adminpassword
+          ports:
+            - containerPort: 88
+              name: kerberos
+            - containerPort: 464
+              name: kpasswd
+            - containerPort: 749
+              name: kadmin
+          volumeMounts:
+            - name: krb5-config
+              mountPath: /etc/krb5.conf
+              subPath: krb5.conf
+            - name: krb5-data
+              mountPath: /var/lib/krb5kdc
+      volumes:
+        - name: krb5-config
+          configMap:
+            name: krb5-config
+        - name: krb5-data
+          persistentVolumeClaim:
+            claimName: krb5-kdc-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: krb5-kdc
+spec:
+  selector:
+    app: krb5-kdc
+  ports:
+    - name: kerberos
+      port: 88
+      targetPort: 88
+    - name: kpasswd
+      port: 464
+      targetPort: 464
+    - name: kadmin
+      port: 749
+      targetPort: 749
