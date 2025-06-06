@@ -10,27 +10,6 @@ global:
     auth:
       enabled: true
 
-  # https://docs.camunda.io/docs/self-managed/setup/install/#configure-license-key
-  license:
-    key: >
-      --------------- BEGIN CAMUNDA LICENSE KEY ---------------
-      X6CnHxJCaOyKaL43aM3FD3wMtBzgpbjjTZ0Vpwik/we5tGeqmFjDvmWwR
-      L+iGwmFbHxwXlyzWqAMhYJBsOJHyjtV5Ntxcn4Nqw45Bjo1++t1XMZuhK
-      YDtdygvM7eoaK2BBXs3EoeBCZnKXV1Ccvyr6jcLNA01TrGVVk1UZSQUhY
-      YaejV30A4weCBgojtdy5cawieVmWE/tVsThEKRaP+hyuwPnPbj0qWn/MY
-      d4wGLkSrW85OKpg0vH+KpCu5bKkKPR/+qx2jERp1EE90M8JJD3yZ8L7nA
-      rG9Oj35/4kLss8wzHFyzdp4NBiZ/+LN9B65RyMD+YuTlyyoMu7aV2ZddQ
-      G99pNfB0yBi+QNTlg0W4k5OQ5IuBhCdyRfhfwmxCsI+L1o+q54cOpCmGz
-      EbiVio4Zo72OgzvI2X7MUZnyef2PC86MUTZKWhhKglRRq3Z25lEIcONQv
-      C5TqWlhxYabK3UUXOj5q/LpRDicIV4hN5hs8eaVVNAAWYNv+t/LSNrCPU
-      OIN8K8nOfwpoMzn6ZWSQ3Hbxle5a/LrPMLlVOox1q0e434Iy51ZZcsOem
-      XSNLZuXm3qqtb7aqOyJu8RZ4zTd6/Pc8ed8ziBSfr7GNnSVzwo3HXN1dV
-      1Udeliux57X0x++D4XLgtAKqxExJyuBy2B/ZtqILyDllRbjadVuuEG30=;
-      customer = testaccount_camunda;
-      expiryDate = unlimited;
-      licenseType = production;
-      startDate = 2024-10-11;
-      ---------------  END CAMUNDA LICENSE KEY  ---------------
 
 prometheusServiceMonitor:
   enabled: false
