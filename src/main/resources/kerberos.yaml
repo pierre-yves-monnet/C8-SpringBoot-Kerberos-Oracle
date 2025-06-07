@@ -5,15 +5,15 @@ metadata:
 data:
   krb5.conf: |
     [libdefaults]
-      default_realm = EXAMPLE.COM
+      default_realm = CAMUNDA.COM
     [realms]
-      EXAMPLE.COM = {
+      CAMUNDA.COM = {
         kdc = krb5-kdc.default.svc.cluster.local
         admin_server = krb5-kdc.default.svc.cluster.local
       }
     [domain_realm]
-      .example.com = EXAMPLE.COM
-      example.com = EXAMPLE.COM
+      .camunda.com = CAMUNDA.COM
+      camunda.com = CAMUNDA.COM
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -45,7 +45,7 @@ spec:
           image: gcavalcante8808/krb5-server
           env:
             - name: KRB5_REALM
-              value: EXAMPLE.COM
+              value: CAMUNDA.COM
             - name: KRB5_KDC
               value: krb5-kdc.default.svc.cluster.local
             - name: KRB5_PASS

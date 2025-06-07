@@ -9,7 +9,9 @@ global:
   identity:
     auth:
       enabled: true
-
+  license:
+    existingSecret: "camunda-license"
+    existingSecretKey: "key"
 
 prometheusServiceMonitor:
   enabled: false
@@ -69,17 +71,17 @@ identity:
       value: update
 
 
-    #    - name: KRB5_CONFIG
-#      value: /etc/krb5.conf
-#    - name: FUNCTIONAL_ACCOUNT
-#      value: npa_data_aud
-#    - name: DB_KRB5CCNAME
-#      value: /kcc/npa_data_aud_krb5cache
-#    - name: BSID_USE_APP_IDENTITY_LABEL
-#      value: "true"
-#    - name: JAVA_OPTS
+    - name: KRB5_CONFIG
+      value: /etc/krb5.conf
+    - name: FUNCTIONAL_ACCOUNT
+      value: npa_data_aud
+    - name: DB_KRB5CCNAME
+      value: /kcc/npa_data_aud_krb5cache
+    - name: BSID_USE_APP_IDENTITY_LABEL
+      value: "true"
+    - name: JAVA_OPTS
 #      value: "-Dloader.path=/extraDrivers"
-#      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
+      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
   extraVolumeMounts:
     - name: jdbcdrivers
       mountPath: /extraDrivers
