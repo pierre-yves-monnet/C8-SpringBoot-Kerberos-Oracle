@@ -1,13 +1,49 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: oracle-data
+  name: oracle-data-pvc
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sqlnet-ora
+data:
+  sqlnet.ora: |
+    NAMES.DIRECTORY_PATH= (TNSNAMES, EZCONNECT, HOSTNAME)
+    DISABLE_OOB=ON
+    SQLNET.EXPIRE_TIME=3
+    SQLNET.AUTHENTICATION_SERVICES= (BEQ, TCPS, KERBEROS5, NONE)
+    SQLNET.FALLBACK_AUTHENTICATION=TRUE
+    SQLNET.KERBEROS5_CONF_MIT = TRUE
+    SQLNET.AUTHENTICATION_KERBEROS5_SERVICE=FREEPDB1
+    SQLNET.KERBEROS5_KEYTAB=/tmp/keytabs/keytab
+    SQLNET.KERBEROS5_CONF=/opt/oracle/product/23ai/dbhomeFree/network/admin/krb5.conf
+---
+# jaas.conf is provided by the oracle setup, and will be used by Identity to connect
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaas-conf
+data:
+  jaas.conf: |
+    Server {
+      com.sun.security.auth.module.Krb5LoginModule required
+      principal="krbtgt/EXAMPLE.COM@EXAMPLE.COM"
+      useKeyTab=true
+      keyTab="/tmp/keytabs/camunda-identity-1.keytab"
+      doNotPrompt=true
+      storeKey=true
+      useTicketCache=false
+      isInitiator=true;
+    };
+
+
 ---
 apiVersion: v1
 kind: Service
@@ -43,7 +79,6 @@ spec:
         fsGroup: 54321
       containers:
         - name: oracle-db
-          # image: gvenzl/oracle-xe:21-slim
           image: container-registry.oracle.com/database/free:latest
           ports:
             - containerPort: 1521
@@ -53,25 +88,33 @@ spec:
               value: MySecurePassword123
           volumeMounts:
             - mountPath: /opt/oracle/oradata
-              name: oracle-pv
+              name: ora-data
             - mountPath: /tmp
               name: tmp-volume
             - mountPath: /tmp/keytabs
               name: kdc-keytab
-            - name: oracle-sqlnet-config
-              mountPath: /opt/oracle/product/23ai/dbhomeFree/network/admin/sqlnet.ora
-              subPath: sqlnet.ora
-            - name: kerberos-config
+            - name: krb5-conf
               mountPath: /opt/oracle/product/23ai/dbhomeFree/network/admin/krb5.conf
-              subPath: krb5.conf
+            - name: sqlnet-ora
+              mountPath: /opt/oracle/product/23ai/dbhomeFree/network/admin/sqlnet.ora
+
       volumes:
-        - name: oracle-pv
+        - name: ora-data
           persistentVolumeClaim:
-            claimName: oracle-data
+            claimName: oracle-data-pvc
+        - name: kdc-keytab
+          persistentVolumeClaim:
+            claimName: krb5-keytab-pvc
+        - name: krb5-conf
+          configMap:
+            name: krb5-conf
+        - name: sqlnet-ora
+          configMap:
+            name: sqlnet-ora
         - name: tmp-volume
           emptyDir: {}
       resources:
         requests:
-          ephemeral-storage: "1Gi"
+          ephemeral-storage: "100M"
         limits:
-          ephemeral-storage: "2Gi"
+          ephemeral-storage: "200M"

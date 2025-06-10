@@ -56,19 +56,53 @@ spec:
       labels:
         app: krb5-kdc
     spec:
-      initContainers:
-        - name: kdc-init
+      containers:
+        - name: init
           image: debian:bullseye
           command: [ "/bin/sh", "-c" ]
           args:
             - |
-              echo "Start initialisation" && \
-              export DEBIAN_FRONTEND=noninteractive  && \
+              echo "------- Start initialisation" && \              
+              export DEBIAN_FRONTEND=noninteractive && \
+              ls -al /krb5-conf && \
+              cp /krb5-conf/krb5.conf /etc/krb5.conf && \
+              echo "------- after copy krb5.conf" && \
+              ls -al /etc/krb5.conf && \
+              cat /etc/krb5.conf && \
+              echo "------- apt get " && \
               apt-get update  && \
+              echo "------- install -y krb5-kdc" && \
               apt-get install -y krb5-kdc krb5-admin-server && \
-              echo "$MASTER_PASSWORD" | krb5_newrealm && \
-              echo "Adding $KADMIN_PRINCIPAL principal" && \
+              echo "------- create /etc/krb5kdc/kdc.conf";
+              
+              tee /etc/krb5kdc/kdc.conf <<EOF
+              [realms]
+              $REALM = {
+              acl_file = /etc/krb5kdc/kadm5.acl
+              max_renewable_life = 7d 0h 0m 0s
+              supported_enctypes = $SUPPORTED_ENCRYPTION_TYPES
+              default_principal_flags = +preauth
+              }
+              EOF
+              
+              echo "------ create /etc/krb5kdc/kadm5.acl";
+              tee /etc/krb5kdc/kadm5.acl <<EOF
+              $KADMIN_PRINCIPAL_FULL *
+              noPermissions@$REALM X
+              EOF
+              
+              echo "------- end of /kadm5.acl"
+              ls -al /etc/krb5kdc/kadm5.acl;
+              
+              echo "------- Create newRealm";
+              krb5_newrealm <<EOF
+              $MASTER_PASSWORD
+              $MASTER_PASSWORD
+              EOF
+              
+              echo "------- Removing [$KADMIN_PRINCIPAL_FULL] for security";
               kadmin.local -q "delete_principal -force $KADMIN_PRINCIPAL_FULL" && \
+              echo "Adding [$KADMIN_PRINCIPAL] principal" && \
               kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $KADMIN_PRINCIPAL_FULL" && \
               kadmin.local -q "delete_principal -force noPermissions@$REALM" && \
               kadmin.local -q "addprinc -pw $KADMIN_PASSWORD noPermissions@$REALM" && \
@@ -79,42 +113,34 @@ spec:
               rm -f /tmp/keytabs/camunda-identity-1.keytab && \
               kadmin.local -q "ktadd -k /tmp/keytabs/camunda-identity-1.keytab krbtgt/EXAMPLE.COM@EXAMPLE.COM" && \
               chmod -R a+rwx /tmp/keytabs/;
+              ls -al /tmp/keytabs
+              echo "-------- Done"              
+              krb5kdc
+              kadmind -nofork
+
           volumeMounts:
             - name: krb5-conf
-              mountPath: /etc/krb5.conf
-              subPath: krb5.conf
+              mountPath: /krb5-conf
+            - name: krb5-data
+              mountPath: /var/lib/krb5kdc
             - name: kdc-keytab
               mountPath: /tmp/keytabs
           env:
+            - name: DEBIAN_FRONTEND
+              value: noninteractive
             - name: MASTER_PASSWORD
               value: masterPassword
             - name: KADMIN_PASSWORD
               value: camunda
             - name: KADMIN_PRINCIPAL
-              value: admin
+              value: kadmin/admin
             - name: KADMIN_PRINCIPAL_FULL
               value: admin/admin@EXAMPLE.COM
             - name: REALM
               value: EXAMPLE.COM
-
-      containers:
-        - name: krb5-kdc
-          image: gcavalcante8808/krb5-server
-          env:
-            - name: REALM
-              value: EXAMPLE.COM
             - name: SUPPORTED_ENCRYPTION_TYPES
               value: aes256-cts-hmac-sha1-96:normal
-            - name: KADMIN_PRINCIPAL
-              value: kadmin/admin
-            - name: KADMIN_PASSWORD
-              value: camunda
-            - name: KRB5_REALM
-              value: EXAMPLE.COM
-            - name: KRB5_KDC
-              value: krb5-kdc.default.svc.cluster.local
-            - name: KRB5_PASS
-              value: camunda
+
           ports:
             - containerPort: 88
               name: kerberos
@@ -122,14 +148,6 @@ spec:
               name: kpasswd
             - containerPort: 749
               name: kadmin
-          volumeMounts:
-            - name: krb5-conf
-              mountPath: /etc/krb5.conf
-              subPath: krb5.conf
-            - name: krb5-data
-              mountPath: /var/lib/krb5kdc
-            - name: kdc-keytab
-              mountPath: /tmp/keytabs
 
       volumes:
         - name: krb5-conf
@@ -137,10 +155,11 @@ spec:
             name: krb5-conf
         - name: krb5-data
           persistentVolumeClaim:
-            claimName: krb5-data-pvc        
+            claimName: krb5-data-pvc
         - name: kdc-keytab
           persistentVolumeClaim:
-            claimName: krb5-keytab-pvc            
+            claimName: krb5-keytab-pvc
+
 ---
 apiVersion: v1
 kind: Service
