@@ -29,14 +29,14 @@ identity:
       command:
         - sh
         - -c
-        - curl -L -o /extraDrivers/ojdbc17.jar https://download.oracle.com/otn-pub/otn_software/jdbc/237/ojdbc17.jar
+        - curl -L -o /extraDrivers/ojdbc17.jar https://raw.githubusercontent.com/pierre-yves-monnet/C8-SpringBoot-Kerberos-Oracle/refs/heads/main/driver/ojdbc17.jar
 
       volumeMounts:
         - name: jdbcdrivers
           mountPath: /extraDrivers
       securityContext:
-          runAsUser: 1000
-          runAsNonRoot: true
+        runAsUser: 1000
+        runAsNonRoot: true
   command:
     - /bin/sh
     - -c
@@ -66,36 +66,14 @@ identity:
       value: MySecurePassword123
     - name: SPRING_JPA_HIBERNATE_DDL-AUTO
       value: update
-
-      #- name: SPRING_PROFILES_ACTIVE
-      #      value: oidc
-      #    - name: SPRING_JPA_DATABASE-PLATFORM
-      #      value: org.hibernate.dialect.Oracle12cDialect
-
-#    - name: KRB5_CONFIG
-    #      value: /etc/krb5.conf
-      #    - name: FUNCTIONAL_ACCOUNT
-    #      value: npa_data_aud
-      #    - name: DB_KRB5CCNAME
-    #      value: /kcc/npa_data_aud_krb5cache
-      #    - name: BSID_USE_APP_IDENTITY_LABEL
-    #      value: "true"
     - name: JAVA_OPTS
       value: "-Dloader.path=/extraDrivers"
-  #      value: "-Djava.security.krb5.conf=/kcc/krb5.conf -Doracle.net.kerberos5_cc_name=/kcc/npa_data_aud_krb5cache"
   extraVolumeMounts:
     - name: jdbcdrivers
       mountPath: /extraDrivers
-      #    - name: krb5-config
-      #      mountPath: /etc/krb5.conf
-  #      subPath: krb5.conf
   extraVolumes:
     - name: jdbcdrivers
       emptyDir: { }
-  # krb5-config is a configmap created during the Kerberos application
-      #    - name: krb5-config
-        #      configMap:
-#        name: krb5-config
 
 identityKeycloak:
   enabled: true

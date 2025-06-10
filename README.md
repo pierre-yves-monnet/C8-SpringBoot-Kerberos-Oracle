@@ -19,8 +19,9 @@ In the cluster, a namespace camunda is created
 $ kubectl create namespace camunda
 ```
 
+# Identity and Oracle
 
-# Oracle
+## Oracle
 
 Check the [src/main/resources/oracle.yaml](src/main/resources/oracle.yaml) file
 
@@ -111,6 +112,8 @@ $ sqlplus system/MySecurePassword123@//localhost:1521 as sysdba
 > SELECT username FROM dba_users;
 ```
 
+> Note: if sqlplus ask again a login password, give system then MySecurePassword123
+> 
 Create a new user
 ```shell
 > CREATE USER oraidentity IDENTIFIED BY MySecurePassword123;
@@ -118,174 +121,22 @@ Create a new user
 GRANT SELECT ON SYS.USER_SEQUENCES TO oraidentity;
 GRANT SELECT ON SYS.ALL_SEQUENCES TO oraidentity;
 GRANT CONNECT, RESOURCE TO oraidentity;
+ALTER USER oraidentity QUOTA UNLIMITED ON USERS;
+
 
 ```
-the user `oraidentity` will be used after by identity
-
-# Kerberos
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: krb5-config
-data:
-  krb5.conf: |
-    [libdefaults]
-      default_realm = CAMUNDA.COM
-    [realms]
-      CAMUNDA.COM = {
-        kdc = krb5-kdc.default.svc.cluster.local
-        admin_server = krb5-kdc.default.svc.cluster.local
-      }
-    [domain_realm]
-      .camunda.com = CAMUNDA.COM
-      camunda.com = CAMUNDA.COM
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: krb5-kdc-data
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: krb5-kdc
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: krb5-kdc
-  template:
-    metadata:
-      labels:
-        app: krb5-kdc
-    spec:
-      containers:
-        - name: krb5-kdc
-          image: gcavalcante8808/krb5-server
-          env:
-            - name: KRB5_REALM
-              value: CAMUNDA.COM
-            - name: KRB5_KDC
-              value: krb5-kdc.default.svc.cluster.local
-            - name: KRB5_PASS
-              value: adminpassword
-          ports:
-            - containerPort: 88
-              name: kerberos
-            - containerPort: 464
-              name: kpasswd
-            - containerPort: 749
-              name: kadmin
-          volumeMounts:
-            - name: krb5-config
-              mountPath: /etc/krb5.conf
-              subPath: krb5.conf
-            - name: krb5-data
-              mountPath: /var/lib/krb5kdc
-      volumes:
-        - name: krb5-config
-          configMap:
-            name: krb5-config
-        - name: krb5-data
-          persistentVolumeClaim:
-            claimName: krb5-kdc-data
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: krb5-kdc
-spec:
-  selector:
-    app: krb5-kdc
-  ports:
-    - name: kerberos
-      port: 88
-      targetPort: 88
-    - name: kpasswd
-      port: 464
-      targetPort: 464
-    - name: kadmin
-      port: 749
-      targetPort: 749
-
-```
-Create the kubernetes resources
-
-```shell
-$ kubectl apply -f src/main/resources/kerberos.yaml -n camunda
-```
-
-This creates a `krb5.conf` information, accessible in the cluster
-
-Information are
-
-| Parameter     | Value       | 
-|---------------|-------------| 
-| REAM          | CAMUNDA.COM |
-| domain_realm  | CAMUNDA.COM |
-
-Check the log
-```shell
-$ kubectl get pods
-$ kubectl logs -f krb5-kdc-84fb77fc6c-mt86g
-/docker-entrypoint.sh: line 21: can't create /etc/krb5.conf: Read-only file system
-No Krb5 database found. Creating one now.
-Initializing database '/var/lib/krb5kdc/principal' for realm 'CAMUNDA.COM',
-master key name 'K/M@CAMUNDA.COM'
-Authenticating as principal root/admin@CAMUNDA.COM with password.
-No policy specified for admin/admin@CAMUNDA.COM; defaulting to no policy
-Principal "admin/admin@CAMUNDA.COM" created.
-2025-06-06 23:41:38,006 CRIT Server 'inet_http_server' running without any HTTP authentication checking
-````
-The user used in Oracle must be referenced in Kerberos
-
-
-```shell
-$ kubectl exec -it krb5-kdc-84fb77fc6c-mt86g -- kadmin.local
-> addprinc oracle
-Enter password for principal "oracle@CAMUNDA.COM":
-Password is MySecurePassword123
-```
-
-## Create a keytab file
-
-```shell
-$ kubectl exec -it krb5-kdc-84fb77fc6c-mt86g -- /bin/sh
-/ # kadmin.local
-kadmin.local: addprinc -randkey myservice/myhost.camunda.com@CAMUNDA.COM
-No policy specified for myservice/myhost.camunda.com@CAMUNDA.COM; defaulting to no policy
-Principal "myservice/myhost.camunda.com@CAMUNDA.COM" created.
-
-kadmin.local: ktadd -k /tmp/myservice.keytab myservice/myhost.camunda.com@CAMUNDA.COM
-Entry for principal myservice/myhost.camunda.com@CAMUNDA.COM with kvno 2, encryption type aes256-cts-hmac-sha1-96 added to keytab WRFILE:/tmp/myservice.keytab.
-Entry for principal myservice/myhost.camunda.com@CAMUNDA.COM with kvno 2, encryption type aes128-cts-hmac-sha1-96 added to keytab WRFILE:/tmp/myservice.keytab.
-
-```
+the user `oraidentity` will be used after by identity.
 
 
 
-## Oracle Database
-1. Ensure a service principal name (SPN) is registered for the database service in your Kerberos realm.
+## Identity
 
-2. use the keytab file
+Check the documentation:
+https://docs.camunda.io/docs/self-managed/identity/configuration/alternative-db/?oracle-config=valuesYaml&mssql-config=valuesYaml
 
-3. Configure Oracle Net Server
+### Download the driver
 
-
-
-# Identity
-
-## Download the driver
-
-The first step consists of downloaded the jdbc drivers. The driver is not publicetly accessible, so it must be downloaded from somewhere else.
+The first step consists of downloaded the jdbc drivers. The driver is not publicly accessible, so it must be downloaded from somewhere else.
 It is saved in the GitHub repository `driver` for test reason.
 
 ```yaml
@@ -346,28 +197,132 @@ $ ls -al /extraDrivers
 -rw-r--r--    1 1000     1001       7371630 Jun  6 21:29 ojdbc17.jar
 
 ```
-## Direct access to Oracle
+### Direct access to Oracle
 
-Specify this environment variable for a direct access
+Specify this environment variable for a direct access.
+
 ```yaml
   env:
-    - name: SPRING_PROFILES_ACTIVE
-      value: oidc
-    - name: SPRING_DATASOURCE_URL
-      value: jdbc:oracle:thin:@//oracle-db:1521/XE
-    - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-      value: oracle.jdbc.OracleDriver
-    - name: SPRING_DATASOURCE_USERNAME
-      value: oraidentity
-    - name: SPRING_DATASOURCE_PASSWORD
-      value: MySecurePassword123
-    - name: SPRING_JPA_HIBERNATE_DDL-AUTO
-      value: update
+     - name: LOGGING_LEVEL_ROOT
+       value: DEBUG
+     - name: SPRING_PROFILES_ACTIVE
+       value: oidc
+     - name: MULTI_TENANCY_ENABLED
+       value: "true"
+     - name: SPRING_JPA_DATABASE
+       value: oracle
+     - name: SPRING_DATASOURCE_URL
+       value: jdbc:oracle:thin:@//oracle-db:1521/XE
+     - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+       value: oracle.jdbc.OracleDriver
+     - name: SPRING_DATASOURCE_USERNAME
+       value: oraidentity
+     - name: SPRING_DATASOURCE_PASSWORD
+       value: MySecurePassword123
+
 ```
 
-TO DO: error, SpringBoot can't create the table (but it is connected)
 
-## Using Kerberos
+### Check oracle
+
+```shell
+pym@Edrahil:$ kubernetes exec -it oracle-db-c5c4ff455-gf8tp -- bash
+
+$ sqlplus oraidentity/MySecurePassword123@//oracle-db:1521/XE
+
+SQL> SELECT table_name FROM user_tables;
+
+TABLE_NAME
+--------------------------------------------------------------------------------
+HTE_MIGRATIONS
+ACCESS_RULES
+ACCESS_RULES_TENANTS
+GROUP_ROLES
+GROUPS
+GROUPS
+MAPPING_RULES
+MAPPING_RULES_APPLIED_ROLES
+MAPPING_RULES_APPLIED_TENANTS
+MEMBERSHIPS
+MIGRATIONS
+PERMISSIONS
+
+TABLE_NAME
+--------------------------------------------------------------------------------
+RESOURCE_AUTHORIZATIONS
+RESOURCES
+ROLES
+ROLES_PERMISSIONS
+TENANTS
+
+
+16 rows selected.
+```
+
+
+# Kerberos, Oracle and Identity
+
+This procedure starts from a clean cluster.
+
+```shell
+kubernetes create namespace camunda
+```
+
+## Kerberos server
+
+Create first the Kerberos server.
+
+```shell
+kubernetes apply -f src/main/resources/kerberos/krb-kerberos.yaml -n camunda
+```
+
+
+
+
+
+
+
+
+------------------ in progress
+
+
+
+
+
+## create sqlnet.ora and krb5.conf
+
+Both configuration files will be mounted on Oracle under /opt/oracle/product/23ai/dbhomeFree/network/admin/.
+
+The sqlnet.ora reference `krb5.conf` file
+
+```shell
+    SQLNET.KERBEROS5_CONF=/opt/oracle/product/23ai/dbhomeFree/network/admin/krb5.conf
+```
+sqlnet.ora refeence 
+```
+SQLNET.KERBEROS5_KEYTAB=/tmp/keytabs/keytab
+```
+So, Oracle will now mount the two files in the correct directory
+
+```shell
+kubernetes apply -f src/main/resources/kerberos/kdc-sqlnet-krb5.yaml -n camunda
+```
+
+
+
+
+
+kdc-keytab-pvc
+
+This configuration 
+```
+javax.security.auth.useSubjectCredsOnly=false
+java.security.krb5.conf=/tmp/krb5.conf
+java.security.auth.login.config=/tmp/jaas.conf
+```
+
+
+
 
 
 Put the Oracle Kerberos keytab file (for your app principal) inside your app container/pod, e.g., /etc/security/keytabs/app.keytab

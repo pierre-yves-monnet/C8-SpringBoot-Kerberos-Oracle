@@ -56,6 +56,14 @@ spec:
               name: oracle-pv
             - mountPath: /tmp
               name: tmp-volume
+            - mountPath: /tmp/keytabs
+              name: kdc-keytab
+            - name: oracle-sqlnet-config
+              mountPath: /opt/oracle/product/23ai/dbhomeFree/network/admin/sqlnet.ora
+              subPath: sqlnet.ora
+            - name: kerberos-config
+              mountPath: /opt/oracle/product/23ai/dbhomeFree/network/admin/krb5.conf
+              subPath: krb5.conf
       volumes:
         - name: oracle-pv
           persistentVolumeClaim:
